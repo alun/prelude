@@ -1,0 +1,4 @@
+#Author : Aleksei Lunacharskii <alun@katlex.com>
+#name : symb
+# --
+const ${1:symbol} = Symbol()
