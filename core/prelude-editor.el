@@ -1,6 +1,6 @@
 ;;; prelude-editor.el --- Emacs Prelude: enhanced core editing experience.
 ;;
-;; Copyright © 2011-2017 Bozhidar Batsov
+;; Copyright © 2011-2018 Bozhidar Batsov
 ;;
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: https://github.com/bbatsov/prelude
@@ -110,10 +110,7 @@
 ;; saveplace remembers your location in a file when saving files
 (setq save-place-file (expand-file-name "saveplace" prelude-savefile-dir))
 ;; activate it for all buffers
-(if (< emacs-major-version 25)
-    (progn (require 'saveplace)
-           (setq-default save-place t))
-  (save-place-mode 1))
+(save-place-mode 1)
 
 ;; savehist keeps track of some history
 (require 'savehist)
@@ -138,9 +135,9 @@
 (defun prelude-recentf-exclude-p (file)
   "A predicate to decide whether to exclude FILE from recentf."
   (let ((file-dir (file-truename (file-name-directory file))))
-    (-any-p (lambda (dir)
-              (string-prefix-p dir file-dir))
-            (mapcar 'file-truename (list prelude-savefile-dir package-user-dir)))))
+    (cl-some (lambda (dir)
+               (string-prefix-p dir file-dir))
+             (mapcar 'file-truename (list prelude-savefile-dir package-user-dir)))))
 
 (add-to-list 'recentf-exclude 'prelude-recentf-exclude-p)
 
@@ -178,8 +175,7 @@ The body of the advice is in BODY."
 
 (add-hook 'mouse-leave-buffer-hook 'prelude-auto-save-command)
 
-(when (version<= "24.4" emacs-version)
-  (add-hook 'focus-out-hook 'prelude-auto-save-command))
+(add-hook 'focus-out-hook 'prelude-auto-save-command)
 
 (defadvice set-buffer-major-mode (after set-major-mode activate compile)
   "Set buffer major mode according to `auto-mode-alist'."
@@ -255,7 +251,7 @@ The body of the advice is in BODY."
 ;; projectile is a project management mode
 (require 'projectile)
 (setq projectile-cache-file (expand-file-name  "projectile.cache" prelude-savefile-dir))
-(projectile-global-mode t)
+(projectile-mode t)
 
 ;; avy allows us to effectively navigate to visible things
 (require 'avy)
