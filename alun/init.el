@@ -6,14 +6,21 @@
 
 ;;; Code:
 
-(disable-theme 'zenburn)
+(defun hourly (annual)
+  "Convert ANNUAL salary to hourly rate."
+  (let ((annual-leave-days 25)
+        (hours-per-day 8))
+    (/ annual
+       (* hours-per-day
+          ;; 365 days a year minus weekends and annual-leave-days
+          (- 365 (* 4 12 2) annual-leave-days)))))
 
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                     (not (gnutls-available-p))))
        (proto (if no-ssl "http" "https"))
-       (url ))
+       (url (concat proto "://melpa.org/packages/")))
   (add-to-list 'package-archives
-               (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+               (cons "melpa" url) t)
   ;; (add-to-list 'package-archives
   ;; (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
   )
@@ -48,13 +55,11 @@ Return a list of installed packages or nil for every skipped package."
                             git
                             indium
                             evil
-                            tern
                             tide
                             web-mode
                             markdown-mode
                             rainbow-delimiters
-                            company
-                            eclim))
+                            company))
 
 (require 'rainbow-delimiters)
 (require 'evil)
@@ -151,29 +156,14 @@ REPLACE-STR string to replace with"
   (setq web-mode-code-indent-offset 2))
 (add-hook 'web-mode-hook  'my-web-mode-hook)
 
-(require 'indium)
-
-(defun my-js-mode-hook ()
-  "Enable indium, global keybindings etc."
-  (indium-interaction-mode)
-  (local-set-key (kbd "<s-return>") #'indium-eval-buffer)
-  (local-set-key (kbd "<C-M-SPC>") #'sp-mark-sexp)
-  (tern-mode t))
-
 (setq-default indent-tabs-mode nil)
 (setq js-indent-level 2)
 (setq tab-width 2)
-(add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
 
 (add-hook 'coffee-mode-hook
           (lambda ()
             (add-hook 'after-save-hook (lambda () (projectile-run-project nil)))
             ))
-
-(add-hook 'js2-mode-hook #'my-js-mode-hook)
-
-(eval-after-load 'company
-    '(add-to-list 'company-backends 'company-tern))
 
 (defun my-frame-config ()
   "Set font size and full screen frame."
@@ -213,11 +203,9 @@ REPLACE-STR string to replace with"
    (quote
     ("SCCS" "RCS" "CVS" "MCVS" ".svn" ".git" ".hg" ".bzr" "_MTN" "_darcs" "{arch}" ".chrome" "build")))
  '(initial-frame-alist (quote ((fullscreen . maximized))))
- '(js2-strict-missing-semi-warning nil)
- '(js2-strict-trailing-comma-warning nil)
  '(package-selected-packages
    (quote
-    (pinentry coffee-mode cider karma projectile exec-path-from-shell find-file-in-project markdown-mode groovy-mode js2-mode json-mode web-mode company-tern tern auctex typescript-mode tide magit flycheck color-theme-modern indium git yaml-mode cider-eval-sexp-fu smartparens rainbow-delimiters evil)))
+    (pinentry coffee-mode cider karma projectile exec-path-from-shell find-file-in-project markdown-mode groovy-mode js2-mode json-mode web-mode auctex typescript-mode tide magit flycheck color-theme-modern indium git yaml-mode cider-eval-sexp-fu smartparens rainbow-delimiters evil)))
  '(safe-local-variable-values
    (quote
     ((ffip-patterns "*.html" "*.js" "*.css" "*.java" "*.xml" "*.js" "*.cljs" "*.clj" "*.json" "*.sh" "*.el")
@@ -304,7 +292,8 @@ REPLACE-STR string to replace with"
 (setq company-tooltip-align-annotations t)
 
 ;; formats the buffer before saving
-(add-hook 'before-save-hook 'tide-format-before-save)
+
+;;(add-hook 'before-save-hook 'tide-format-before-save)
 
 (add-hook 'typescript-mode-hook #'setup-tide-mode)
 
@@ -341,7 +330,7 @@ REPLACE-STR string to replace with"
   (interactive)
   (message (buffer-file-name)))
 
-(global-set-key (kbd "s-b s-p") 'show-file-name)
+(global-set-key (kbd "s-b s-m") 'show-file-name)
 
 (global-set-key (kbd "s-b s-f") 'find-file-at-point)
 
@@ -360,21 +349,17 @@ REPLACE-STR string to replace with"
 
 (global-set-key (kbd "s-b s-g") 'open-github)
 
-;; Simple secrects
-
 (add-to-list 'load-path "~/.emacs.d/alun/custom")
 
 (require 'open-github-from-here)
+
+;; Simple secrects
+
 (require 'simple-secrets)
 (setq secret-password-file "~/passwd/.file.gpg")
-(secret-load-keys)
 
-
-(global-set-key (kbd "s-b s-p") #'secret-lookup-clipboard)
-
-(secret-generate-password)
-
-(require 'projectile)
+(global-set-key (kbd "s-b s-p s-l") #'secret-load-keys)
+(global-set-key (kbd "s-b s-p s-p") #'secret-lookup-clipboard)
 
 ;; Paredit
 (require 'paredit)
@@ -431,11 +416,6 @@ REPLACE-STR string to replace with"
 
 (add-hook 'eshell-output-filter-functions 'my-eshell-nuke-ansi-escapes t)
 
-;; Eclim
-
-(require 'eclim)
-(add-hook 'java-mode-hook 'eclim-mode)
-
 ;; Easy JSON
 
 (defun format-js ()
@@ -446,7 +426,7 @@ REPLACE-STR string to replace with"
                            "js-beautify -"
                            nil
                            t)
-  (js2-mode)
+  (rjsx-mode)
   (keyboard-quit))
 
 (global-set-key (kbd "s-b s-j") #'format-js)
@@ -477,17 +457,116 @@ REPLACE-STR string to replace with"
 (global-unset-key (kbd "s-d"))
 (global-set-key (kbd "s-d s-d") #'remove-line)
 
-;; ES6 expression arrow funciton indentiation
-
-(require 'js-align)
-(add-hook 'js2-mode-hook 'js-align-mode)
-
 ;; https://github.com/purcell/exec-path-from-shell
 ;; only need exec-path-from-shell on OSX
 ;; this hopefully sets up path and other vars better
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize)
   (message "Shell PATH is loaded"))
+
+;; LSP
+
+(require 'lsp-java)
+
+(add-hook 'java-mode-hook #'lsp-java-enable)
+;; set the projects that are going to be imported into the workspace.
+
+(require 'lsp-ui)
+(add-hook 'lsp-mode-hook 'lsp-ui-mode)
+
+;; JavaScript
+
+(require 'indium)
+
+(defun my-js-mode-hook ()
+  "Enable indium, global keybindings etc."
+  (indium-interaction-mode)
+  (local-set-key (kbd "<s-return>") #'indium-eval-buffer)
+  (local-set-key (kbd "<C-M-SPC>") #'sp-mark-sexp))
+
+(add-hook 'rjsx-mode-hook #'my-js-mode-hook)
+
+(add-to-list 'auto-mode-alist '("\\.js\\'" . rjsx-mode))
+
+(add-hook 'rjsx-mode-hook #'js2-imenu-extras-mode)
+
+(require 'js2-refactor)
+(require 'xref-js2)
+
+(add-hook 'js2-mode-hook #'js2-refactor-mode)
+(js2r-add-keybindings-with-prefix "C-c C-r")
+(define-key js2-mode-map (kbd "C-k") #'js2r-kill)
+
+;; js-mode (which js2 is based on) binds "M-." which conflicts with xref, so
+;; unbind it.
+(define-key js-mode-map (kbd "M-.") nil)
+
+(add-hook 'js2-mode-hook (lambda ()
+                           (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t)))
+
+(define-key js2-mode-map (kbd "C-k") #'js2r-kill)
+
+(require 'company)
+(require 'company-tern)
+
+(add-to-list 'company-backends 'company-tern)
+(add-hook 'js2-mode-hook (lambda ()
+                           (tern-mode)
+                           (company-mode)))
+
+;; Disable completion keybindings, as we use xref-js2 instead
+(define-key tern-mode-keymap (kbd "M-.") nil)
+(define-key tern-mode-keymap (kbd "M-,") nil)
+
+;; JS goodies
+(defun run-command (buffer-name command)
+  "Run a command in a new eshell in projectile root.
+BUFFER-NAME the name for new eshell buffer
+COMMAND a command to run"
+  (let* ((buffer (get-buffer buffer-name))
+         (eshell-buffer-name (concat "*" (projectile-project-name) ":" buffer-name "*")))
+    (if buffer
+        (switch-to-buffer buffer-name)
+      (projectile-with-default-dir (projectile-project-root)
+        (eshell)
+        (eshell-return-to-prompt)
+        (insert command)
+        (eshell-send-input)))))
+
+(defun run-webdriver ()
+  "Run web driver."
+  (interactive)
+  (run-command "webdriver" "webdriver-manager start"))
+
+(defun npm-start ()
+  "Run npm start."
+  (interactive)
+  (run-command "build" "npm start"))
+
+(define-key js2-mode-map (kbd "s-b s-w s-d") #'run-webdriver)
+(define-key js2-mode-map (kbd "s-b s-w s-s") #'npm-start)
+
+;; Powerline
+
+(require 'powerline)
+(powerline-default-theme)
+
+;; Transparency
+
+(add-to-list 'default-frame-alist '(alpha . (95 . 85)))
+
+;; Fix some issue with ansi-term
+
+(setq ansi-term-color-vector
+  [term
+   term-color-black
+   term-color-red
+   term-color-green
+   term-color-yellow
+   term-color-blue
+   term-color-magenta
+   term-color-cyan
+   term-color-white])
 
 ;; Done
 

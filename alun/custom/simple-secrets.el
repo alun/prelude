@@ -103,6 +103,7 @@
 (defun secret-load-keys ()
   "Loads all keys in the password file. Note: This does not remember
 the passwords in any Emacs variables; only the keys."
+  (interactive)
   (setq secret-password-keys nil)
   (with-temp-buffer
     (insert-file-contents secret-password-file)
@@ -157,7 +158,7 @@ after adding it to the secret file."
   (with-temp-buffer
     (insert-file-contents secret-password-file)
     (goto-char (point-max))
-    (insert (concat "\n" key "\t" pass))
+    (insert (concat key "\t" pass))
     (write-file secret-password-file))
   (add-to-list 'secret-password-keys key))
 
@@ -167,7 +168,7 @@ string then autogenerate a password, and put it in the kill ring
 after adding it to the secret file."
   (interactive
    (list (ido-completing-read "Key or site: " secret-password-keys)
-         (read-input "New password (empty for auto): ")))
+         (read-string "New password (empty for auto): ")))
   (unless (member key secret-password-keys)
     (error "This key does not have a password to update"))
   (when (or (not pass) (equal "" pass))
@@ -180,8 +181,6 @@ after adding it to the secret file."
     (re-search-forward (concat "^" key))
     (kill-whole-line)
     (insert (concat key "\t" pass))
-    (unless (eq (point) (point-max))
-      (insert "\n"))
     (write-file secret-password-file))
   )
 
