@@ -36,7 +36,7 @@
 ;;; be specified with `secret-generate-password-command'. By default
 ;;; it uses pwgen.
 
-
+(setq lexical-binding t)
 
 ;; TEMPORARY: To fix an upstream bug introduced in Emacs 25
 ;; https://bbs.archlinux.org/viewtopic.php?id=190497
@@ -129,10 +129,16 @@ the passwords in any Emacs variables; only the keys."
       (error (error "The key was not found.")))
   ))
 
-(defun kill-temp (str)
-  (kill-new str)
-  (run-at-time "10 sec" nil (lambda ()
-                              (kill-new "" t))))
+(let* ((timer nil)
+       (clean-up (lambda ()
+                   (kill-new "" t)
+                   (cancel-timer timer)
+                   (setq timer nil))))
+  (defun kill-temp (str)
+    (when timer (funcall clean-up))
+    (kill-new str)
+    (setq timer
+          (run-at-time "15 sec" nil clean-up))))
 
 (defun secret-lookup-clipboard (key)
   "Put the password for the given key into the clipboard and kill ring"
