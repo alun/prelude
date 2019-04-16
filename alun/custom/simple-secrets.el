@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t -*-
 ;; Copyright (C) 2014 Johan S. R. Nielsen
 
 ;; Author: Johan S. R. Nielsen <jsrn@jsrn.dk>
@@ -35,8 +36,6 @@
 ;;; Auto-generating passwords is done using a shell command which can
 ;;; be specified with `secret-generate-password-command'. By default
 ;;; it uses pwgen.
-
-(setq lexical-binding t)
 
 ;; TEMPORARY: To fix an upstream bug introduced in Emacs 25
 ;; https://bbs.archlinux.org/viewtopic.php?id=190497
@@ -127,7 +126,7 @@ the passwords in any Emacs variables; only the keys."
           (re-search-forward (concat "^" key "\t\\(.*\\)$"))
           (match-string 1))
       (error (error "The key was not found.")))
-  ))
+    ))
 
 (let* ((timer nil)
        (clean-up (lambda ()
